@@ -62,7 +62,7 @@ let quizController = (function(){
                  questionId = 0;
              }
              
-             
+             //Validatiosn before adding the Question to localStorage
              if(newQuestionText.value !== ""){
                 if(optArr.length > 1){
                     if (isChecked){
@@ -80,17 +80,22 @@ let quizController = (function(){
                            Options[x].value = "";
                            Options[x].previousElementSibling.checked = false;
                         }
+
+                        return true;
                     }
                     else{
                         alert('You havent assined a correct answer.');
+                        return false;
                     }
                  }
                  else{
                     alert('You must insert at least 2 options.');
+                    return false;
                  }
              }
              else{
                  alert('You must insert Question.');
+                 return false;
              }
         }
     }
@@ -138,7 +143,8 @@ let UIController = ( function() {
             domItems.adminOptionsContainer.lastElementChild.lastElementChild.addEventListener('focus', addInput);
         },
 
-        createQuestionList : function(getQuestions){
+        //Creates the Question List everytime the page is load
+        createQuestionList: function (getQuestions) {
             let questionHTML ;
 
             domItems.insertedQuestionsWrapper.innerHTML = '';
@@ -150,9 +156,15 @@ let UIController = ( function() {
 
                 domItems.insertedQuestionsWrapper.insertAdjacentHTML('afterbegin',questionHTML);
             }
-            
+        },
+        
+        editQuestionList: function (event, storageQuestionList) {
+            let getId;
+            if ('question-'.indexOf(event.target.id)) {
+                getId = parseInt(event.target.id.split('-')[1]);
+               storageQuestionList.getQuestionCollection()[getId]  ;
+            }
         }
-
     };
 
 
@@ -171,7 +183,16 @@ let Controller = (function( quizCtrl, UICtrl ){
     selectedDomItems.questionInsertBtn.addEventListener('click', (e) => {
         const adminOptions = document.querySelectorAll('.admin-option');
 
-        quizCtrl.addQuestion( selectedDomItems.newQuestionText , adminOptions );
+        const checkBoolean = quizCtrl.addQuestion(selectedDomItems.newQuestionText, adminOptions);
+        
+        if (checkBoolean) {
+            UICtrl.createQuestionList(quizCtrl.getQuestionLocalStorage);
+        }
+
+    });
+
+    selectedDomItems.insertedQuestionsWrapper.addEventListener('click', (e) => {
+        UICtrl.editQuestionList(e, quizCtrl.getQuestionLocalStorage);
     });
 
    
