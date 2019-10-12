@@ -113,7 +113,10 @@ let UIController = ( function() {
         newQuestionText  : document.getElementById("new-question-text"),
         adminOptions    : document.querySelectorAll(".admin-option"),
         adminOptionsContainer: document.querySelector(".admin-options-container"),
-        insertedQuestionsWrapper: document.querySelector('.inserted-questions-wrapper')
+        insertedQuestionsWrapper: document.querySelector('.inserted-questions-wrapper'),
+        questionUpdateBtn: document.getElementById("question-update-btn"),
+        questionDeleteBtn: document.getElementById("question-delete-btn"),
+        questionClearBtn : document.getElementById("questions-clear-btn")
     };
 
     return {
@@ -158,13 +161,115 @@ let UIController = ( function() {
             }
         },
         
-        editQuestionList: function (event, storageQuestionList) {
-            let getId;
+        
+        editQuestionList: function (event, storageQuestionList, fnAddInputs, fnUpdateQuestionList) {
+            let getId, foundItemIdex, optionHTML;
+            let questionToUpdate , QuestionList = [];
+
             if ('question-'.indexOf(event.target.id)) {
-                getId = parseInt(event.target.id.split('-')[1]);
-               storageQuestionList.getQuestionCollection()[getId]  ;
+                questionId = parseInt(event.target.id.split('-')[1]);
+                QuestionList = storageQuestionList.getQuestionCollection();
+                
+                //Find the question to Edit
+                for (let index = 0; index < QuestionList.length; index++) {
+                    if (QuestionList[index].id === questionId) {
+                        questionToUpdate = QuestionList[index];
+                        foundItemIdex = index;
+                        break;
+                    }
+                } 
+                
+                //Update the UI wth the question Data.
+                domItems.newQuestionText.value = questionToUpdate.questionText;
+                domItems.adminOptionsContainer.innerHTML = '';
+                
+                //Add questio answers
+                optionHTML = '';
+                for (let x = 0; x < questionToUpdate.options.length; x++) {
+                    
+                    optionHTML += '<div class="admin-option-wrapper"><input type="radio" class="admin-option-' + x +
+                        '" name="answer" value="' + x + '"><input type="text" class="admin-option admin-option-'
+                        + x + '" value="' + questionToUpdate.options[x] + '" > </div>';
+                }
+                domItems.adminOptionsContainer.innerHTML = optionHTML;
+
+                //Display Update and Delete Btns, Hide insert btn
+                domItems.questionUpdateBtn.style.visibility = 'visible';
+                domItems.questionDeleteBtn.style.visibility = 'visible';
+                domItems.questionInsertBtn.style.visibility = 'hidden';
+                domItems.questionClearBtn.style.visibility = 'hidden';
+                fnAddInputs();
+
+                const restoreDefaultView = () => { 
+                    let updatedOptions;
+                    updatedOptions = document.querySelectorAll(".admin-option");
+                    
+                    domItems.newQuestionText.value = '';
+                    for (let i = 0; i < updatedOptions.length; i++) {
+                        updatedOptions[i].value = '';
+                        updatedOptions[i].previousElementSibling.checked = false;
+                    }
+
+                    domItems.questionUpdateBtn.style.visibility = 'hidden';
+                    domItems.questionDeleteBtn.style.visibility = 'hidden';
+                    domItems.questionInsertBtn.style.visibility = 'visible';
+                    domItems.questionClearBtn.style.visibility = 'visible';
+
+                    fnUpdateQuestionList(storageQuestionList);
+                }
+
+                const updateQuestion = () => {
+                    let optionElements, newOptions = [];
+
+                    optionElements = document.querySelectorAll(".admin-option");
+                    questionToUpdate.questionText = domItems.newQuestionText.value;
+                    questionToUpdate.correctAnswer = '';
+
+                    for (let i = 0; i < optionElements.length; i++) {
+                        if (optionElements[i].value !== '') {
+                            newOptions.push(optionElements[i].value);
+                            if (optionElements[i].previousElementSibling.checked) {
+                                questionToUpdate.correctAnswer = optionElements[i].value;
+                            }
+                        }
+                    }
+                    questionToUpdate.options = newOptions;
+                    
+                    if (questionToUpdate.questionText !== '') {
+                        if (questionToUpdate.options.length > 1) {
+                            if(questionToUpdate.correctAnswer !== ''){
+                                QuestionList.splice(foundItemIdex, 1, questionToUpdate);
+                                storageQuestionList.setQuestionCollection(QuestionList);    
+
+                                restoreDefaultView();
+                            }
+                            else {
+                                alert('You havent assined a correct answer.');
+                            }
+                        } else {
+                            alert('you must insert at least two options');
+                        }
+                            
+                    }
+                    else {
+                        alert('Please insert question.')
+                    }
+                    
+                }
+
+                const deleteQuestion = () => { 
+                    QuestionList.splice(foundItemIdex, 1);
+                    storageQuestionList.setQuestionCollection(QuestionList);
+                    restoreDefaultView();
+                }
+
+                domItems.questionUpdateBtn.onclick = updateQuestion;
+                domItems.questionDeleteBtn.onclick = deleteQuestion;
+            
             }
         }
+
+
     };
 
 
@@ -192,7 +297,7 @@ let Controller = (function( quizCtrl, UICtrl ){
     });
 
     selectedDomItems.insertedQuestionsWrapper.addEventListener('click', (e) => {
-        UICtrl.editQuestionList(e, quizCtrl.getQuestionLocalStorage);
+        UICtrl.editQuestionList(e, quizCtrl.getQuestionLocalStorage,UIController.addInputsDynamically , UIController.createQuestionList);
     });
 
    
