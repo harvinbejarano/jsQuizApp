@@ -267,9 +267,20 @@ let UIController = ( function() {
                 domItems.questionDeleteBtn.onclick = deleteQuestion;
             
             }
+        },
+
+        clearQuestionList: function (storageQuestionList) {
+            if (storageQuestionList.getQuestionCollection() !== null) {
+                if (storageQuestionList.getQuestionCollection().length > 0) {
+                    let result = confirm('Do you want to close the List?');
+                    if (result) {
+                        storageQuestionList.removeQuestionCollection();
+                        domItems.insertedQuestionsWrapper.innerHTML = '';
+                    }
+               }
+            }
+            
         }
-
-
     };
 
 
@@ -299,6 +310,11 @@ let Controller = (function( quizCtrl, UICtrl ){
     selectedDomItems.insertedQuestionsWrapper.addEventListener('click', (e) => {
         UICtrl.editQuestionList(e, quizCtrl.getQuestionLocalStorage,UIController.addInputsDynamically , UIController.createQuestionList);
     });
+
+
+    selectedDomItems.questionClearBtn.addEventListener('click', () => {
+        UIController.clearQuestionList(quizCtrl.getQuestionLocalStorage);
+     });
 
    
 
