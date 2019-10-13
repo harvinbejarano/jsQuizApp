@@ -11,24 +11,62 @@ let quizController = (function(){
         this.correctAnswer = correctAnswer;
     }
 
+
     const questionLocalStorage = {
-        setQuestionCollection : function(newCollection){
-            localStorage.setItem('questionCollenction' , JSON.stringify(newCollection ));
+        setQuestionCollection: function (newCollection) {
+            localStorage.setItem('questionCollenction', JSON.stringify(newCollection));
         },
-        getQuestionCollection : function(){
-            return JSON.parse ( localStorage.getItem('questionCollenction'));
+        getQuestionCollection: function () {
+            return JSON.parse(localStorage.getItem('questionCollenction'));
         },
-        removeQuestionCollection : function(){
+        removeQuestionCollection: function () {
             localStorage.removeItem('questionCollenction');
         }
-    }
+    };
 
     //Initialize localStorage
     if(questionLocalStorage.getQuestionCollection() === null ){
         questionLocalStorage.setQuestionCollection([]);
     }
 
+    let quizProgress = {
+        questionIndex: 0
+    };
+
+    //****Person */
+    function Person(id, firstname, lastname, score) {
+        this.id = id;
+        this.firstname = lastname;
+        this.lastname = lastname;
+        this.score = score;
+    }
+
+    let currPersonData = {
+        fullname: [],
+        score : 0
+    };
+
+    let adminFullName = ['John', 'Smith'];
+
+    const personLocalStorage = {
+        setPersondata: function (newPerson) {
+            localStorage.setItem('personData', JSON.stringify(newPerson));
+        },
+        getPersonData: function () {
+            return JSON.parse(localStorage.getItem('personData'));
+        },
+        removePersonData: function () {
+            localStorage.removeItem('personData');
+        }
+    };
+
+    if (personLocalStorage.getPersonData() === null) {
+        personLocalStorage.setPersondata([]);
+    }
+
     return {
+        getQuizProgress: quizProgress,
+        
         getQuestionLocalStorage : questionLocalStorage,
 
         addQuestion: function(newQuestionText , Options){
@@ -97,7 +135,43 @@ let quizController = (function(){
                  alert('You must insert Question.');
                  return false;
              }
-        }
+        },
+
+        checkAnswer: function (ans) {
+            if (questionLocalStorage.getQuestionCollection()[quizProgress.questionIndex].correctAnswer === ans.textContent) {
+                currPersonData.score++
+                return true;
+            }
+            else {
+                return false;
+            }
+        },
+
+        isFinished: function () {
+            return quizProgress.questionIndex + 1 === questionLocalStorage.getQuestionCollection().length;
+        },
+
+        addPerson: function () {
+            let newPerson, personId, personData;
+            if (personLocalStorage.getPersonData().length > 0) {
+                personId = personLocalStorage.getPersonData()[personLocalStorage.getPersonData().length - 1].id + 1;
+            }
+            else {
+                personId = 0;
+            }
+            newPerson = new Person(personId, currPersonData.fullname[0], currPersonData.fullname[1], currPersonData.score);
+            personData = personLocalStorage.getPersonData();
+            personData.push(newPerson);
+            personLocalStorage.setPersondata(personData);
+
+            console.log('new person added',newPerson);
+            
+        },
+
+        getCurrPersonData: currPersonData,
+        
+        getAdminFulName: adminFullName,
+        getPersonLocalStorage : personLocalStorage
     }
     
 
@@ -109,6 +183,8 @@ let quizController = (function(){
 let UIController = ( function() {
 
     const domItems = {
+        //Admin panel Elements-----
+        adminPanelSection: document.querySelector(".admin-panel-container"),
         questionInsertBtn : document.getElementById("question-insert-btn"),
         newQuestionText  : document.getElementById("new-question-text"),
         adminOptions    : document.querySelectorAll(".admin-option"),
@@ -116,7 +192,28 @@ let UIController = ( function() {
         insertedQuestionsWrapper: document.querySelector('.inserted-questions-wrapper'),
         questionUpdateBtn: document.getElementById("question-update-btn"),
         questionDeleteBtn: document.getElementById("question-delete-btn"),
-        questionClearBtn : document.getElementById("questions-clear-btn")
+        questionClearBtn: document.getElementById("questions-clear-btn"),
+        //----Quiz Section Elements-----
+        quizSection : document.querySelector(".quiz-container"),
+        askedQuestionText: document.getElementById("asked-question-text"),
+        quizOptionsWraper: document.querySelector(".quiz-options-wrapper"),
+        progressBar: document.querySelector("progress"),
+        progressPar: document.getElementById("progress"),
+        instantAnsContainer: document.querySelector(".instant-answer-container"),
+        instantAnsText: document.getElementById('instant-answer-text'),
+        instantAnsDiv: document.getElementById('instant-answer-wrapper'),
+        emotionIcon: document.getElementById("emotion"),
+        nextQuestionBtn: document.getElementById('next-question-btn'),
+        //----landng page elements---
+        landingPageSection : document.querySelector(".landing-page-container"),
+        startQuizBtn: document.getElementById("start-quiz-btn"),
+        firstNameInput: document.getElementById("firstname"),
+        lastNameinput: document.getElementById("lastname"),
+        //---Final results eleents
+        finalResultSection: document.querySelector(".final-result-container"),
+        finalScoreText: document.getElementById('final-score-text'),
+        logoutBtn : document.getElementById("final-logout-btn")
+
     };
 
     return {
@@ -280,7 +377,100 @@ let UIController = ( function() {
                }
             }
             
+        },
+
+        displayQuestion: function (storageQuestionList , progress) {
+            
+            if (storageQuestionList.getQuestionCollection().length > 0) {
+
+                let newOptionHTML, characterArray;
+                characterArray = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+                domItems.askedQuestionText.textContent = storageQuestionList.getQuestionCollection()[progress.questionIndex].questionText;
+                
+                domItems.quizOptionsWraper.innerHTML = '';
+                
+                for (let i = 0; i < storageQuestionList.getQuestionCollection()[progress.questionIndex].options.length; i++) {
+                    
+                    newOptionHTML = '<div class="choice-' + i + '"><span class="choice-' + i + '">'+characterArray[i]+'</span><p  class="choice-' + i +
+                        '">' + storageQuestionList.getQuestionCollection()[progress.questionIndex].options[i] + '</' + i + '></div>';
+                    
+                    domItems.quizOptionsWraper.insertAdjacentHTML('beforeend', newOptionHTML);
+                    
+                }
+            }
+        },
+
+        displayProgress: function (storageQuestionList , progress) {
+            domItems.progressBar.max  = storageQuestionList.getQuestionCollection().length;
+            domItems.progressBar.value = progress.questionIndex + 1;
+            domItems.progressPar.textContent = (progress.questionIndex + 1) + '/' + storageQuestionList.getQuestionCollection().length;
+        },
+
+        newDesign: function (ansResult, selectdAnswer) {
+            let index = 0;
+            let twoOptions = {
+                instAnstext: ['This is a wrong answer', 'This is a correct answer'],
+                instAnsClass: ['red', 'green'],
+                emationType: ['images/sad.png', 'images/happy.png'],
+                optionsSpanBg:['rgba(200,0,0,.7)','rgba(0,250,0,.2)']
+            };
+
+            if (ansResult) {
+                index = 1;
+            }
+
+            domItems.quizOptionsWraper.style.cssText = "opacity: 0.6; pointer-events: none;";    
+            domItems.instantAnsContainer.style.opacity = 1;
+            domItems.instantAnsText.textContent = twoOptions.instAnstext[index];
+            domItems.instantAnsDiv.className = twoOptions.instAnsClass[index];
+            domItems.emotionIcon.setAttribute('src', twoOptions.emationType[index]);
+            selectdAnswer.previousElementSibling.style.backgroundColor = twoOptions.optionsSpanBg[index];
+        },
+
+        resetDesign: function () {
+            domItems.quizOptionsWraper.style.cssText = "";    
+            domItems.instantAnsContainer.style.opacity = 0;
+        },
+
+        getFullName: function (currPerson, storageQuestionList, admin) {
+
+            if ( domItems.firstNameInput.value === '' || domItems.lastNameinput.value === '') {
+                alert('Please, enter your firstname and lastname');
+                return;
+            }
+                
+            if ( !(domItems.firstNameInput.value === admin[0] && domItems.lastNameinput.value === admin[1]) ) {
+                if (storageQuestionList.getQuestionCollection().length === 0) {
+                    alert('The quiz is not ready, please contact the admin.');
+                    return;
+                }
+
+                currPerson.fullname.push(domItems.firstNameInput.value);
+                currPerson.fullname.push(domItems.lastNameinput.value);
+                domItems.landingPageSection.style.display = 'none';
+                domItems.quizSection.style.display = 'block';
+            }
+            else {
+                domItems.landingPageSection.style.display = 'none';
+                domItems.adminPanelSection.style.display = 'block';
+            }
+            
+            
+        },
+
+        finalResult: function (currPerson) {
+            domItems.finalScoreText.textContent = currPerson.fullname[0] + ' ' + currPerson.fullname[1] + 
+                ' , your final score is ' + currPerson.score;
+            
+            domItems.quizSection.style.display = 'none';
+            domItems.finalResultSection.style = 'block';
+        },
+
+        addResultOnPanel: function (userData) {
+            console.log(userData.getPersonData());
         }
+
     };
 
 
@@ -314,7 +504,64 @@ let Controller = (function( quizCtrl, UICtrl ){
 
     selectedDomItems.questionClearBtn.addEventListener('click', () => {
         UIController.clearQuestionList(quizCtrl.getQuestionLocalStorage);
-     });
+    });
+
+    //--Quiz Section---
+    UIController.displayQuestion(quizController.getQuestionLocalStorage, quizController.getQuizProgress);
+    UIController.displayProgress(quizController.getQuestionLocalStorage, quizController.getQuizProgress);
+
+    selectedDomItems.quizOptionsWraper.addEventListener('click', (e) => {
+        let updatedOptionsDiv = selectedDomItems.quizOptionsWraper.querySelectorAll('div');
+        for (let i = 0; i < updatedOptionsDiv.length; i++) {
+            if (e.target.className === 'choice-' + i) {
+                let answer = document.querySelector('.quiz-options-wrapper div p.' + e.target.className);
+                const ansResult = quizController.checkAnswer(answer);
+                UIController.newDesign(ansResult, answer);
+
+                if (quizController.isFinished()) {
+                    selectedDomItems.nextQuestionBtn.textContent = 'Finish';
+                }
+            }
+        }
+    });
+
+    
+
+    let nextQuestion = function (questionData, progress) {
+        if (quizController.isFinished()) {
+             
+            //Fish QUiz
+            quizController.addPerson();
+            UIController.finalResult(quizController.getCurrPersonData);
+
+            
+        }
+        else {
+            UIController.resetDesign();
+            quizController.getQuizProgress.questionIndex++;
+            UIController.displayQuestion(quizController.getQuestionLocalStorage, quizController.getQuizProgress);
+            UIController.displayProgress(quizController.getQuestionLocalStorage, quizController.getQuizProgress);
+        }
+    };
+
+    selectedDomItems.nextQuestionBtn.onclick = function () {
+        nextQuestion(quizController.getQuestionLocalStorage, quizController.getQuizProgress);
+    }
+
+    selectedDomItems.startQuizBtn.addEventListener('click', () => {
+        UIController.getFullName(quizController.getCurrPersonData, quizController.getQuestionLocalStorage, quizController.getAdminFulName);
+    });
+
+    selectedDomItems.lastNameinput.addEventListener('focus', () => { 
+        
+        selectedDomItems.lastNameinput.addEventListener('keypress', (e) => {
+            if (e.keyCode === 13) {
+                UIController.getFullName(quizController.getCurrPersonData, quizController.getQuestionLocalStorage, quizController.getAdminFulName);
+            }
+         });
+    });
+
+    UIController.addResultOnPanel(quizController.getPersonLocalStorage);
 
    
 
