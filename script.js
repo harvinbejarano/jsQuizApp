@@ -36,7 +36,7 @@ let quizController = (function(){
     //****Person */
     function Person(id, firstname, lastname, score) {
         this.id = id;
-        this.firstname = lastname;
+        this.firstname = firstname;
         this.lastname = lastname;
         this.score = score;
     }
@@ -168,6 +168,19 @@ let quizController = (function(){
             
         },
 
+        removePerson: function (personId) {
+            const persons = personLocalStorage.getPersonData();
+            let newPersons = [];
+           
+            for (let i = 0; i < persons.length; i++) {
+                if (persons[i].id.toString() === personId) {
+                    newPersons = persons.filter(p => p.id.toString() !== personId);
+                    break;
+                }
+            }
+            personLocalStorage.setPersondata(newPersons);
+        },
+
         getCurrPersonData: currPersonData,
         
         getAdminFulName: adminFullName,
@@ -193,6 +206,8 @@ let UIController = ( function() {
         questionUpdateBtn: document.getElementById("question-update-btn"),
         questionDeleteBtn: document.getElementById("question-delete-btn"),
         questionClearBtn: document.getElementById("questions-clear-btn"),
+        resultList: document.querySelector(".results-list-wrapper"),
+        clearResultBtn:document.getElementById("results-clear-btn"),
         //----Quiz Section Elements-----
         quizSection : document.querySelector(".quiz-container"),
         askedQuestionText: document.getElementById("asked-question-text"),
@@ -212,7 +227,8 @@ let UIController = ( function() {
         //---Final results eleents
         finalResultSection: document.querySelector(".final-result-container"),
         finalScoreText: document.getElementById('final-score-text'),
-        logoutBtn : document.getElementById("final-logout-btn")
+        logoutBtn: document.getElementById("final-logout-btn")
+        
 
     };
 
@@ -468,7 +484,26 @@ let UIController = ( function() {
         },
 
         addResultOnPanel: function (userData) {
-            console.log(userData.getPersonData());
+            const persons = userData.getPersonData();
+
+            for (let i = 0; i < persons.length; i++) {
+                let index = i + 1;
+                let personInfo = persons[i].firstname + ' ' + persons[i].lastname + ' - ' + persons[i].score + ' Points.';
+                
+                const perSonHTML = '<p class="person person-' + index + '"><span class="person-' + index + '">' + personInfo + '</span><button        id="delete-result-btn_' + persons[i].id + '"class="delete-result-btn">Delete</button></p>';                
+                
+                domItems.resultList.insertAdjacentHTML('beforeend', perSonHTML);
+                
+            }
+        },
+
+        removeResultFromPanel: function (btn) {
+            btn.parentElement.remove();
+        },
+
+        clearResultList: function (userData) {
+            userData.removePersonData();    
+            domItems.resultList.innerHTML = '';
         }
 
     };
@@ -562,6 +597,19 @@ let Controller = (function( quizCtrl, UICtrl ){
     });
 
     UIController.addResultOnPanel(quizController.getPersonLocalStorage);
+
+    selectedDomItems.resultList.addEventListener('click', (e) => { 
+        if (e.target.id.indexOf("btn_") >= 0) { 
+            const personId = e.target.id.split("_")[1];
+
+            UIController.removeResultFromPanel(e.target);
+            quizController.removePerson(personId);
+        }
+    });
+
+    selectedDomItems.clearResultBtn.addEventListener('click', () => {
+        UIController.clearResultList(quizController.getPersonLocalStorage);
+    });
 
    
 
